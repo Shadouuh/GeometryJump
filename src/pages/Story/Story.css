@@ -1,0 +1,169 @@
+.story-page {
+  min-height: 100vh;
+  padding-top: 70px;
+  background: linear-gradient(180deg, #0a0a0a 0%, #1a0a2e 100%);
+}
+
+.story-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 40px 32px;
+}
+
+.story-header {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  margin-bottom: 40px;
+}
+
+.story-title {
+  font-size: 36px;
+  font-weight: 800;
+  background: linear-gradient(135deg, #ffffff, #8b5cf6);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin: 0;
+}
+
+
+.story-map {
+  margin-bottom: 40px;
+}
+
+.map-surface {
+  position: relative;
+  height: 520px;
+  border-radius: 22px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background:
+    radial-gradient(900px 420px at 20% 80%, rgba(34, 197, 94, 0.16), transparent 55%),
+    radial-gradient(700px 380px at 70% 55%, rgba(59, 130, 246, 0.14), transparent 55%),
+    radial-gradient(600px 380px at 85% 30%, rgba(139, 92, 246, 0.14), transparent 55%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.01));
+  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.45);
+}
+
+.map-surface::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(1px 1px at 15% 20%, rgba(255, 255, 255, 0.08), transparent 60%),
+    radial-gradient(1px 1px at 40% 55%, rgba(255, 255, 255, 0.06), transparent 60%),
+    radial-gradient(1px 1px at 70% 35%, rgba(255, 255, 255, 0.07), transparent 60%),
+    radial-gradient(1px 1px at 82% 70%, rgba(255, 255, 255, 0.05), transparent 60%);
+  pointer-events: none;
+}
+
+.map-paths {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.map-paths path {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.14);
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-dasharray: 2 6;
+}
+
+.map-node {
+  position: absolute;
+  transform: translate(-50%, -50%);
+}
+
+.node-pulse {
+  position: absolute;
+  inset: -22px;
+  border-radius: 999px;
+  background: radial-gradient(circle, rgba(139, 92, 246, 0.22), transparent 60%);
+  opacity: 0;
+  transition: opacity 0.25s ease;
+  pointer-events: none;
+}
+
+.map-node-open:hover .node-pulse {
+  opacity: 1;
+}
+
+.node-dot {
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(15, 15, 30, 0.85);
+  border: 2px solid rgba(139, 92, 246, 0.55);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
+  margin: 0 auto;
+}
+
+.map-node-locked .node-dot {
+  border-color: rgba(255, 255, 255, 0.16);
+  opacity: 0.7;
+}
+
+.node-number {
+  color: rgba(255, 255, 255, 0.95);
+  font-weight: 800;
+  font-size: 14px;
+}
+
+.node-card {
+  width: 240px;
+  margin-top: 10px;
+  padding: 16px;
+}
+
+.node-card-locked {
+  opacity: 0.75;
+}
+
+.node-title {
+  font-size: 16px;
+  font-weight: 800;
+  color: rgba(255, 255, 255, 0.95);
+  margin-bottom: 6px;
+}
+
+.node-subtitle {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 12px;
+  margin-bottom: 12px;
+}
+
+.node-subtitle span {
+  color: #8b5cf6;
+  font-weight: 700;
+}
+
+.node-locked {
+  text-align: center;
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 10px;
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 12px;
+}
+
+.coming-soon {
+  text-align: center;
+  padding: 40px;
+  background: rgba(139, 92, 246, 0.1);
+  border: 2px dashed rgba(139, 92, 246, 0.3);
+  border-radius: 16px;
+}
+
+.coming-soon p {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 18px;
+  margin: 0;
+}
