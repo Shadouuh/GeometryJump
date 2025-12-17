@@ -20,9 +20,13 @@
 
 .editor-canvas canvas {
   display: block;
-  cursor: crosshair;
+  cursor: default;
   image-rendering: pixelated;
   image-rendering: crisp-edges;
+}
+
+.select-mode .editor-canvas canvas {
+  cursor: crosshair;
 }
 
 .editor-canvas-container:hover {
@@ -71,4 +75,61 @@
   pointer-events: none;
   text-transform: uppercase;
   letter-spacing: 1px;
+}
+
+.editor-context-menu {
+  position: absolute;
+  background: rgba(20, 20, 35, 0.95);
+  border: 1px solid rgba(139, 92, 246, 0.4);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  color: white;
+  min-width: 180px;
+  z-index: 20;
+  padding: 8px;
+}
+
+.editor-context-menu .menu-item {
+  display: block;
+  width: 100%;
+  background: transparent;
+  border: none;
+  color: white;
+  text-align: left;
+  padding: 8px 10px;
+  border-radius: 6px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.editor-context-menu .menu-item:hover {
+  background: rgba(139, 92, 246, 0.2);
+}
+
+.editor-context-menu .menu-divider {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.08);
+  margin: 6px 0;
+}
+
+.editor-context-menu .menu-types {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.editor-context-menu .menu-type {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: white;
+  padding: 6px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.editor-context-menu .menu-type:hover {
+  background: rgba(139, 92, 246, 0.2);
+  border-color: rgba(139, 92, 246, 0.4);
 }

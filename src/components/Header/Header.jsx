@@ -1,11 +1,13 @@
 import { FaSignOutAlt } from 'react-icons/fa';
 import { useAuth } from '../../hooks/useAuth';
+import { useNavigate } from 'react-router-dom';
 import { useCharacter } from '../../hooks/useCharacter';
 import './Header.css';
 
 export const Header = () => {
   const { user, logout } = useAuth();
   const { selectedCharacter } = useCharacter();
+  const navigate = useNavigate();
 
   const characterSymbol = selectedCharacter?.type === 'square' ? '□'
     : selectedCharacter?.type === 'circle' ? '○'
@@ -47,7 +49,11 @@ export const Header = () => {
           </div>
         </div>
         
-        <button className="logout-btn" onClick={logout} title="Cerrar sesión">
+        <button
+          className="logout-btn"
+          onClick={() => { logout(); navigate('/login', { replace: true }); }}
+          title="Cerrar sesión"
+        >
           <FaSignOutAlt />
         </button>
       </div>

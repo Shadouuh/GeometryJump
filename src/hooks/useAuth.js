@@ -10,8 +10,8 @@ export const useAuth = () => {
     setIsAuthenticated(authService.isAuthenticated());
   }, []);
 
-  const login = (username, password) => {
-    const result = authService.login(username, password);
+  const login = async (username, password) => {
+    const result = await authService.login(username, password);
     if (result.success) {
       setUser(result.user);
       setIsAuthenticated(true);
@@ -19,12 +19,8 @@ export const useAuth = () => {
     return result;
   };
 
-  const register = (username, email, password) => {
-    const result = authService.register(username, email, password);
-    if (result.success) {
-      setUser(result.user);
-      setIsAuthenticated(true);
-    }
+  const register = async (username, email, password) => {
+    const result = await authService.register(username, email, password);
     return result;
   };
 

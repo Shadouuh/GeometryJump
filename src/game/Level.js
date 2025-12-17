@@ -1,4 +1,4 @@
-import { createGameObject, Block, Spike, Door, SpawnPoint, Coin, Water, Lava, FallingBlock, Key, LockedDoor, Enemy, CharacterGate, SwitchPlatform } from './GameObject';
+import { createGameObject, Block, Spike, Door, SpawnPoint, Coin, Water, Lava, FallingBlock, Key, LockedDoor, Enemy, CharacterGate, SwitchPlatform, DoubleJumpOrb, Flamethrower } from './GameObject';
 import { Background } from './Background';
 
 // Nivel
@@ -109,6 +109,14 @@ export class Level {
         break;
       case 'switch_platform':
         newObject = new SwitchPlatform(gridX, gridY);
+        this.objects.push(newObject);
+        break;
+      case 'double_jump':
+        newObject = new DoubleJumpOrb(gridX, gridY);
+        this.objects.push(newObject);
+        break;
+      case 'flamethrower':
+        newObject = new Flamethrower(gridX, gridY, Number(subtype) || 5);
         this.objects.push(newObject);
         break;
     }

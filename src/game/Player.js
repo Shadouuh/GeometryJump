@@ -19,6 +19,9 @@ export class Player {
     this.isGrounded = false;
     this.facingRight = true;
     this.isAlive = true;
+    this.isInWater = false;
+    this.canDoubleJump = false;
+    this.hasDoubleJumped = false;
     
     // Modificadores basados en stats del personaje
     this.applyCharacterStats();
@@ -66,16 +69,25 @@ export class Player {
   tryJump() {
     if (!this.isAlive) return false;
     if (this.isGrounded) {
-      this.velocityY = this.jumpForce;
+      const jumpForce = this.isInWater ? this.jumpForce * 0.7 : this.jumpForce;
+      this.velocityY = jumpForce;
       this.isGrounded = false;
-      return true; // Salto exitoso
+      this.hasDoubleJumped = false;
+      return true;
     }
-    return false; // No pudo saltar
+    if (this.canDoubleJump && !this.hasDoubleJumped) {
+      const jumpForce = this.isInWater ? this.jumpForce * 0.7 : this.jumpForce;
+      this.velocityY = jumpForce;
+      this.hasDoubleJumped = true;
+      return true;
+    }
+    return false;
   }
   
   setGrounded() {
     this.isGrounded = true;
     this.velocityY = 0;
+    this.hasDoubleJumped = false;
   }
   
   die() {
@@ -91,6 +103,8 @@ export class Player {
     this.velocityY = 0;
     this.isAlive = true;
     this.isGrounded = false;
+    this.canDoubleJump = false;
+    this.hasDoubleJumped = false;
   }
   
   draw(p5) {
@@ -138,6 +152,15 @@ export class Player {
       case 'square':
         p5.rectMode(p5.CENTER);
         p5.rect(x, y, size, size);
+        break;
+        
+      case 'rhombus':
+        p5.quad(
+          x, y - halfSize,
+          x + halfSize, y,
+          x, y + halfSize,
+          x - halfSize, y
+        );
         break;
         
       case 'triangle':

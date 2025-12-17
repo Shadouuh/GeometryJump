@@ -23,6 +23,14 @@ const CHARACTERS = [
     color: '#a855f7', // Púrpura
     description: 'Un triángulo isósceles preciso',
     stats: { speed: 6, jump: 7 }
+  },
+  {
+    id: 'rombo',
+    name: 'Rombo',
+    type: 'rhombus',
+    color: '#facc15', // Amarillo
+    description: 'Un rombo ágil y veloz',
+    stats: { speed: 8, jump: 6 }
   }
 ];
 

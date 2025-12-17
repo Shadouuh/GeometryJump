@@ -14,12 +14,14 @@ export const EditorToolbar = ({
   selectedBlockType,
   selectedKeyType,
   selectedCharacter,
+  selectedFlameInterval,
   selectedBackground,
   levelSize,
   onToolSelect,
   onBlockTypeChange,
   onKeyTypeChange,
   onCharacterChange,
+  onFlameIntervalChange,
   onBackgroundChange,
   onLevelSizeChange,
   onRotateObject,
@@ -34,6 +36,7 @@ export const EditorToolbar = ({
   const [showBackgrounds, setShowBackgrounds] = useState(false);
   
   const tools = [
+    { id: 'select', name: 'Seleccionar', icon: <FaExpand />, color: '#8b5cf6' },
     { id: 'block', name: 'Bloque', icon: <FaCube />, color: '#3c3c50' },
     { id: 'spike', name: 'Pincho', icon: <FaCaretUp />, color: '#c83232' },
     { id: 'water', name: 'Agua', icon: <FaWater />, color: '#3278c8' },
@@ -45,6 +48,8 @@ export const EditorToolbar = ({
     { id: 'enemy', name: 'Enemigo', icon: <FaSkull />, color: '#c83264' },
     { id: 'character_gate', name: 'Pasadizo', icon: <FaSquare />, color: '#6496ff' },
     { id: 'switch_platform', name: 'Cambio de Personaje', icon: <FaExchangeAlt />, color: '#9664ff' },
+    { id: 'double_jump', name: 'Doble Salto', icon: <FaCircle />, color: '#64c8ff' },
+    { id: 'flamethrower', name: 'Lanzallamas', icon: <FaFire />, color: '#ff7043' },
     { id: 'spawn', name: 'Inicio', icon: <FaMapMarkerAlt />, color: '#6464ff' },
     { id: 'door', name: 'Puerta', icon: <FaDoorOpen />, color: '#64c864' },
     { id: 'erase', name: 'Borrar', icon: <FaEraser />, color: '#646464' },
@@ -117,8 +122,8 @@ export const EditorToolbar = ({
         </>
       )}
       
-      {/* Rotación para Pinchos */}
-      {selectedTool === 'spike' && (
+      {/* Rotación */}
+      {(selectedTool === 'spike' || selectedTool === 'flamethrower') && (
         <>
           <div className="toolbar-section">
             <h3 className="toolbar-title">🔄 Rotación</h3>
@@ -132,7 +137,7 @@ export const EditorToolbar = ({
               <span>Rotar</span>
             </button>
             <div className="rotate-info">
-              Doble click en un pincho para rotarlo
+              Doble click para rotar
             </div>
           </div>
           <div className="toolbar-divider"></div>
@@ -172,6 +177,30 @@ export const EditorToolbar = ({
                 <span className="block-icon">▲</span>
                 <span className="block-label">Triángulo</span>
               </button>
+            </div>
+          </div>
+          <div className="toolbar-divider"></div>
+        </>
+      )}
+      
+      {/* Intervalo del Lanzallamas */}
+      {selectedTool === 'flamethrower' && (
+        <>
+          <div className="toolbar-section">
+            <h3 className="toolbar-title">🔥 Intervalo</h3>
+            <div className="block-type-grid">
+              {[3,5,7].map(sec => (
+                <button
+                  key={sec}
+                  className={`block-type-button ${selectedFlameInterval === sec ? 'active' : ''}`}
+                  onClick={() => onFlameIntervalChange(sec)}
+                  disabled={isPlaying}
+                  title={`${sec}s`}
+                >
+                  <span className="block-icon"><FaFire /></span>
+                  <span className="block-label">{sec}s</span>
+                </button>
+              ))}
             </div>
           </div>
           <div className="toolbar-divider"></div>

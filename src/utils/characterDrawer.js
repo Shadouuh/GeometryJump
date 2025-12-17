@@ -15,6 +15,15 @@ export const drawCharacter = (p5, character, x, y, size = 60, withFace = true) =
       p5.rect(0, 0, size, size);
       break;
       
+    case 'rhombus':
+      p5.quad(
+        0, -size / 2,
+        size / 2, 0,
+        0, size / 2,
+        -size / 2, 0
+      );
+      break;
+      
     case 'triangle':
       p5.triangle(
         0, -size / 2,
@@ -68,6 +77,11 @@ const drawFace = (p5, type, size) => {
   if (type === 'triangle' || type === 'isosceles') {
     eyeY = -size * 0.15;
     mouthY = size * 0.1;
+  }
+  
+  if (type === 'rhombus') {
+    eyeY = -size * 0.12;
+    mouthY = size * 0.12;
   }
   
   // Ojos

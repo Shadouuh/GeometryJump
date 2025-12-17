@@ -1,13 +1,7 @@
-// Servicio de autenticación con datos hardcodeados
-const USERS = [
-  { id: 1, username: 'player1', password: '123456', email: 'player1@geometricjump.com' },
-  { id: 2, username: 'gamer', password: 'password', email: 'gamer@geometricjump.com' },
-  { id: 3, username: 'demo', password: 'demo123', email: 'demo@geometricjump.com' },
-];
-
 class AuthService {
   constructor() {
     this.currentUser = this.loadUser();
+    this.baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/auth';
   }
 
   loadUser() {
@@ -20,43 +14,39 @@ class AuthService {
     this.currentUser = user;
   }
 
-  login(username, password) {
-    const user = USERS.find(
-      u => u.username === username && u.password === password
-    );
-    
-    if (user) {
-      const { password: _, ...userWithoutPassword } = user;
-      this.saveUser(userWithoutPassword);
-      return { success: true, user: userWithoutPassword };
+  async login(username, password) {
+    try {
+      const res = await fetch(`${this.baseUrl}/login.php`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password })
+      });
+      const data = await res.json();
+      if (data?.success && data?.user) {
+        this.saveUser(data.user);
+        return { success: true, user: data.user };
+      }
+      return { success: false, error: data?.error || 'Error de autenticación' };
+    } catch (e) {
+      return { success: false, error: 'No se pudo conectar al servidor' };
     }
-    
-    return { success: false, error: 'Credenciales inválidas' };
   }
 
-  register(username, email, password) {
-    // Verificar si el usuario ya existe
-    const existingUser = USERS.find(
-      u => u.username === username || u.email === email
-    );
-    
-    if (existingUser) {
-      return { success: false, error: 'Usuario o email ya existe' };
+  async register(username, email, password) {
+    try {
+      const res = await fetch(`${this.baseUrl}/register.php`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, email, password })
+      });
+      const data = await res.json();
+      if (data?.success && data?.user) {
+        return { success: true, user: data.user };
+      }
+      return { success: false, error: data?.error || 'Error al registrar' };
+    } catch (e) {
+      return { success: false, error: 'No se pudo conectar al servidor' };
     }
-
-    // Crear nuevo usuario
-    const newUser = {
-      id: USERS.length + 1,
-      username,
-      email,
-      password
-    };
-    
-    USERS.push(newUser);
-    const { password: _, ...userWithoutPassword } = newUser;
-    this.saveUser(userWithoutPassword);
-    
-    return { success: true, user: userWithoutPassword };
   }
 
   logout() {

@@ -1,22 +1,35 @@
-import { useState } from 'react';
-import { FaTimes, FaDownload, FaUpload, FaCheck } from 'react-icons/fa';
+import { useState, useEffect } from 'react';
+import { FaTimes, FaDownload, FaUpload, FaCheck, FaCloudUploadAlt } from 'react-icons/fa';
 import { Button } from '../../../components/Button/Button';
 import { Input } from '../../../components/Input/Input';
 import './LevelModal.css';
+import { useAuth } from '../../../hooks/useAuth';
 
 export const LevelModal = ({ isOpen, mode, level, onClose, onSave, onLoad }) => {
+  const { user } = useAuth();
   const [levelName, setLevelName] = useState(level?.name || '');
-  const [authorName, setAuthorName] = useState(level?.author || '');
   const [jsonInput, setJsonInput] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [uploading, setUploading] = useState(false);
+  const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+  
+  if (isOpen && mode === 'save' && user) {
+    level.author = user.username || 'Anónimo';
+  }
+  
+  useEffect(() => {
+    if (isOpen && mode === 'save') {
+      setLevelName(level?.name || '');
+    }
+  }, [isOpen, mode, level]);
   
   if (!isOpen) return null;
   
   const handleExport = () => {
     try {
       level.name = levelName || 'Nivel Sin Nombre';
-      level.author = authorName || 'Anónimo';
+      level.author = user?.username || 'Anónimo';
       
       const jsonString = level.exportJSON();
       
@@ -40,7 +53,44 @@ export const LevelModal = ({ isOpen, mode, level, onClose, onSave, onLoad }) => 
       setError('Error al exportar el nivel');
     }
   };
-  
+
+  const handleUpload = async () => {
+    try {
+      setError('');
+      setSuccess('');
+      setUploading(true);
+      level.name = levelName || 'Nivel Sin Nombre';
+      level.author = user?.username || 'Anónimo';
+      const jsonString = level.exportJSON();
+      const resp = await fetch(`${apiBase}/levels/save.php`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: level.name,
+          author: level.author,
+          json: jsonString,
+          user_id: user?.id || null
+        })
+      });
+      const data = await resp.json().catch(() => ({}));
+      if (!resp.ok || !data.success) {
+        console.error('Upload failed', { status: resp.status, data });
+        throw new Error(data.error || 'Error al subir el nivel');
+      }
+      console.log('Upload success', data);
+      setSuccess('¡Nivel subido correctamente!');
+      setTimeout(() => {
+        setSuccess('');
+        onClose();
+      }, 1500);
+    } catch (err) {
+      console.error('Upload error', err);
+      setError(err.message || 'Error al subir el nivel');
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const handleImport = () => {
     try {
       setError('');
@@ -100,21 +150,19 @@ export const LevelModal = ({ isOpen, mode, level, onClose, onSave, onLoad }) => 
               <Input
                 label="Nombre del Nivel"
                 value={levelName}
-                onChange={(e) => setLevelName(e.target.value)}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setLevelName(val);
+                  level.name = val;
+                }}
                 placeholder="Mi nivel épico"
-              />
-              
-              <Input
-                label="Autor"
-                value={authorName}
-                onChange={(e) => setAuthorName(e.target.value)}
-                placeholder="Tu nombre"
+                autoFocus
               />
               
               <div className="json-preview">
                 <label className="input-label">Vista Previa JSON</label>
                 <div className="json-box">
-                  <pre>{level.exportJSON()}</pre>
+                  <pre>{JSON.stringify({ ...level.toJSON(), name: levelName || 'Nivel Sin Nombre', author: user?.username || 'Anónimo' }, null, 2)}</pre>
                 </div>
                 <Button 
                   variant="secondary" 
@@ -162,13 +210,23 @@ export const LevelModal = ({ isOpen, mode, level, onClose, onSave, onLoad }) => 
           </Button>
           
           {mode === 'save' ? (
-            <Button 
-              variant="primary" 
-              icon={<FaDownload />}
-              onClick={handleExport}
-            >
-              Exportar JSON
-            </Button>
+            <>
+              <Button 
+                variant="primary" 
+                icon={<FaDownload />}
+                onClick={handleExport}
+              >
+                Exportar JSON
+              </Button>
+              <Button 
+                variant="secondary" 
+                icon={<FaCloudUploadAlt />}
+                onClick={handleUpload}
+                disabled={uploading}
+              >
+                {uploading ? 'Subiendo...' : 'Subir al servidor'}
+              </Button>
+            </>
           ) : (
             <Button 
               variant="primary" 

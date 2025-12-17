@@ -16,7 +16,7 @@ export const Register = () => {
   const { register } = useAuth();
   const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     
@@ -35,9 +35,9 @@ export const Register = () => {
       return;
     }
 
-    const result = register(username, email, password);
+    const result = await register(username, email, password);
     if (result.success) {
-      navigate('/menu');
+      navigate('/login', { replace: true, state: { email } });
     } else {
       setError(result.error);
     }

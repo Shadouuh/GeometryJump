@@ -7,7 +7,10 @@ export const Input = ({
   onChange, 
   icon,
   error,
-  label 
+  label,
+  autoFocus = false,
+  disabled = false,
+  readOnly = false
 }) => {
   return (
     <div className="input-group">
@@ -19,6 +22,9 @@ export const Input = ({
           placeholder={placeholder}
           value={value}
           onChange={onChange}
+          autoFocus={autoFocus}
+          disabled={disabled}
+          readOnly={readOnly}
           className={`input ${icon ? 'input-with-icon' : ''} ${error ? 'input-error' : ''}`}
         />
       </div>

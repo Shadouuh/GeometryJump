@@ -19,6 +19,7 @@ export const Editor = () => {
   const [selectedBlockType, setSelectedBlockType] = useState('default');
   const [selectedKeyType, setSelectedKeyType] = useState('circle');
   const [selectedCharacterType, setSelectedCharacterType] = useState('boxy');
+  const [selectedFlameInterval, setSelectedFlameInterval] = useState(5);
   const [mode, setMode] = useState('edit'); // 'edit' o 'play'
   const [modalOpen, setModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState('save'); // 'save' o 'load'
@@ -38,6 +39,10 @@ export const Editor = () => {
   
   const handleCharacterChange = (character) => {
     setSelectedCharacterType(character);
+  };
+  
+  const handleFlameIntervalChange = (interval) => {
+    setSelectedFlameInterval(interval);
   };
   
   const handleBackgroundChange = (bgType) => {
@@ -127,6 +132,7 @@ export const Editor = () => {
             selectedBlockType={selectedBlockType}
             selectedKeyType={selectedKeyType}
             selectedCharacterType={selectedCharacterType}
+            selectedFlameInterval={selectedFlameInterval}
             mode={mode}
             onModeChange={handleModeChange}
             characterData={selectedCharacter}
@@ -144,6 +150,7 @@ export const Editor = () => {
               onBlockTypeChange={handleBlockTypeChange}
               onKeyTypeChange={handleKeyTypeChange}
               onCharacterChange={handleCharacterChange}
+              onFlameIntervalChange={handleFlameIntervalChange}
               onBackgroundChange={handleBackgroundChange}
               onLevelSizeChange={handleLevelSizeChange}
               onRotateObject={handleRotateObject}

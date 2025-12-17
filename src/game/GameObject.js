@@ -936,6 +936,95 @@ export class SwitchPlatform extends GameObject {
   }
 }
 
+export class DoubleJumpOrb extends GameObject {
+  constructor(x, y) {
+    super(x, y, 'double_jump');
+    this.glow = 0.6;
+  }
+  
+  draw(p5) {
+    p5.push();
+    const cx = this.x + this.width / 2;
+    const cy = this.y + this.height / 2;
+    const pulse = Math.sin(p5.frameCount * 0.08) * 0.3 + 0.7;
+    p5.noStroke();
+    p5.fill(100, 180, 255, 120);
+    p5.circle(cx, cy, 28);
+    const alpha = 140 + (this.glow * 100);
+    p5.fill(100, 180, 255, alpha * pulse);
+    p5.circle(cx, cy, 18);
+    p5.fill(255);
+    p5.textAlign(p5.CENTER, p5.CENTER);
+    p5.textSize(10);
+    p5.text('2x', cx, cy);
+    p5.pop();
+  }
+}
+
+export class Flamethrower extends GameObject {
+  constructor(x, y, intervalSeconds = 5) {
+    super(x, y, 'flamethrower');
+    this.intervalSeconds = intervalSeconds;
+    this.baseTime = Date.now();
+    this.on = false;
+  }
+  
+  update() {
+    const period = this.intervalSeconds * 1000;
+    const t = (Date.now() - this.baseTime) % period;
+    this.on = t < period / 2;
+  }
+  
+  getFlameRects() {
+    const rects = [];
+    const size = this.width;
+    const dir = ((this.rotation % 360) + 360) % 360;
+    for (let i = 1; i <= 3; i++) {
+      if (dir === 0) {
+        rects.push({ left: this.x + i * size, top: this.y, right: this.x + (i + 1) * size, bottom: this.y + size });
+      } else if (dir === 90) {
+        rects.push({ left: this.x, top: this.y + i * size, right: this.x + size, bottom: this.y + (i + 1) * size });
+      } else if (dir === 180) {
+        rects.push({ left: this.x - i * size, top: this.y, right: this.x - (i - 1) * size, bottom: this.y + size });
+      } else {
+        rects.push({ left: this.x, top: this.y - i * size, right: this.x + size, bottom: this.y - (i - 1) * size });
+      }
+    }
+    return rects;
+  }
+  
+  draw(p5) {
+    p5.push();
+    p5.fill(80, 80, 90);
+    p5.stroke(120, 120, 140);
+    p5.strokeWeight(2);
+    p5.rect(this.x, this.y, this.width, this.height);
+    
+    p5.translate(this.x + this.width / 2, this.y + this.height / 2);
+    p5.rotate(p5.radians(this.rotation));
+    p5.translate(-(this.width / 2), -(this.height / 2));
+    
+    p5.fill(200, 200, 220);
+    p5.rect(this.width - 10, 14, 10, 12);
+    
+    if (this.on) {
+      p5.noStroke();
+      p5.fill(255, 100, 60, 180);
+      for (let i = 1; i <= 3; i++) {
+        p5.rect(this.width - 10 + i * this.width, 0, this.width, this.height);
+      }
+    }
+    
+    p5.pop();
+  }
+  
+  toJSON() {
+    return {
+      ...super.toJSON(),
+      intervalSeconds: this.intervalSeconds
+    };
+  }
+}
 // Factory para crear objetos desde JSON
 export function createGameObject(data) {
   let obj = null;
@@ -983,6 +1072,12 @@ export function createGameObject(data) {
       break;
     case 'switch_platform':
       obj = new SwitchPlatform(data.x, data.y);
+      break;
+    case 'double_jump':
+      obj = new DoubleJumpOrb(data.x, data.y);
+      break;
+    case 'flamethrower':
+      obj = new Flamethrower(data.x, data.y, data.intervalSeconds || Number(data.subtype) || 5);
       break;
     default:
       return null;

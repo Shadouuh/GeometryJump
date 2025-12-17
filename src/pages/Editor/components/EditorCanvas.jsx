@@ -16,6 +16,7 @@ export const EditorCanvas = ({
   selectedBlockType,
   selectedKeyType,
   selectedCharacterType,
+  selectedFlameInterval,
   mode, 
   onModeChange,
   characterData 
@@ -24,6 +25,56 @@ export const EditorCanvas = ({
   const containerRef = useRef(null); // contenedor con scroll (camara)
   const p5Instance = useRef(null); // instancia viva de p5
   const gameEngineRef = useRef(null); // instancia viva del juego
+  const selectedBlocksRef = useRef([]);
+  const [contextMenu, setContextMenu] = useState({ visible: false, x: 0, y: 0 });
+  const [changeTypeOpen, setChangeTypeOpen] = useState(false);
+  const conversionTypes = [
+    { id: 'block', name: 'Bloque' },
+    { id: 'spike', name: 'Pincho' },
+    { id: 'water', name: 'Agua' },
+    { id: 'lava', name: 'Lava' },
+    { id: 'falling_block', name: 'Frágil' },
+    { id: 'coin', name: 'Moneda' },
+    { id: 'key', name: 'Llave' },
+    { id: 'locked_door', name: 'Puerta Bloqueada' },
+    { id: 'enemy', name: 'Enemigo' },
+    { id: 'character_gate', name: 'Pasadizo' },
+    { id: 'switch_platform', name: 'Cambio Personaje' },
+    { id: 'double_jump', name: 'Doble Salto' },
+    { id: 'flamethrower', name: 'Lanzallamas' }
+  ];
+  const applyChangeType = (type) => {
+    const items = selectedBlocksRef.current.slice();
+    items.forEach(b => {
+      level.removeObjectAt(b.x, b.y);
+      if (type === 'block') {
+        level.addObject('block', b.x, b.y, selectedBlockType);
+      } else if (type === 'key') {
+        level.addObject('key', b.x, b.y, selectedKeyType);
+      } else if (type === 'locked_door') {
+        level.addObject('locked_door', b.x, b.y, selectedKeyType);
+      } else if (type === 'character_gate') {
+        level.addObject('character_gate', b.x, b.y, selectedCharacterType);
+      } else if (type === 'flamethrower') {
+        level.addObject('flamethrower', b.x, b.y, selectedFlameInterval);
+      } else {
+        level.addObject(type, b.x, b.y);
+      }
+    });
+    selectedBlocksRef.current = [];
+    setChangeTypeOpen(false);
+    setContextMenu({ visible: false, x: 0, y: 0 });
+  };
+  const handleDeleteSelected = () => {
+    const items = selectedBlocksRef.current.slice();
+    items.forEach(b => level.removeObjectAt(b.x, b.y));
+    selectedBlocksRef.current = [];
+    setContextMenu({ visible: false, x: 0, y: 0 });
+  };
+  const handleDeselect = () => {
+    selectedBlocksRef.current = [];
+    setContextMenu({ visible: false, x: 0, y: 0 });
+  };
 
   // Si volvemos a edit: cortamos el juego y dejamos el nivel "limpio"
   useEffect(() => {
@@ -56,6 +107,12 @@ export const EditorCanvas = ({
       let isDragging = false; // estamos arrastrando?
       let lastClickTime = 0; // para doble click
       let lastClickCell = { x: -1, y: -1 }; // para doble click
+      let isSelecting = false;
+      let selectionStart = null;
+      let selectionEnd = null;
+      let isMovingSelection = false;
+      let moveStartCell = null;
+      let originalPositions = [];
       
       p.setup = () => {
         // p5: una vez
@@ -83,6 +140,24 @@ export const EditorCanvas = ({
       const drawEditMode = (p) => {
         drawGrid(p); // grilla
         level.draw(p); // objetos del nivel
+        
+        selectedBlocksRef.current.forEach(obj => {
+          p.noFill();
+          p.stroke(139, 92, 246);
+          p.strokeWeight(3);
+          p.rect(obj.x, obj.y, GRID_SIZE, GRID_SIZE);
+        });
+        
+        if (isSelecting && selectionStart && selectionEnd) {
+          const left = Math.min(selectionStart.x, selectionEnd.x);
+          const top = Math.min(selectionStart.y, selectionEnd.y);
+          const right = Math.max(selectionStart.x, selectionEnd.x) + GRID_SIZE;
+          const bottom = Math.max(selectionStart.y, selectionEnd.y) + GRID_SIZE;
+          p.fill(139, 92, 246, 40);
+          p.stroke(139, 92, 246, 180);
+          p.strokeWeight(2);
+          p.rect(left, top, right - left, bottom - top);
+        }
         
         // celda marcada
         if (hoveredCell.x >= 0 && hoveredCell.y >= 0) {
@@ -214,11 +289,23 @@ export const EditorCanvas = ({
               for (let i = 0; i < 3; i++) {
                 const offsetX = i * 13 + 7;
                 p.triangle(
-                  x + offsetX - 6, y + 32,
+                  x + offsetX - 6, y + GRID_SIZE,
                   x + offsetX, y + 8,
-                  x + offsetX + 6, y + 32
+                  x + offsetX + 6, y + GRID_SIZE
                 );
               }
+            }};
+          case 'double_jump':
+            return { draw: (p) => {
+              const cx = x + GRID_SIZE / 2;
+              const cy = y + GRID_SIZE / 2;
+              p.noStroke();
+              p.fill(100, 180, 255, 120);
+              p.circle(cx, cy, 28);
+              p.fill(255);
+              p.textAlign(p.CENTER, p.CENTER);
+              p.textSize(12);
+              p.text('2x', cx, cy);
             }};
           case 'water':
             return { draw: (p) => {
@@ -334,6 +421,31 @@ export const EditorCanvas = ({
               p.strokeWeight(2);
               p.rect(x, y, GRID_SIZE, GRID_SIZE);
             }};
+          case 'double_jump':
+            return { draw: (p) => {
+              const cx = x + GRID_SIZE / 2;
+              const cy = y + GRID_SIZE / 2;
+              const pulse = Math.sin(p.frameCount * 0.08) * 0.3 + 0.7;
+              p.noStroke();
+              p.fill(100, 180, 255, 120);
+              p.circle(cx, cy, 28);
+              p.fill(100, 180, 255, 180 * pulse);
+              p.circle(cx, cy, 18);
+              p.fill(255);
+              p.textAlign(p.CENTER, p.CENTER);
+              p.textSize(10);
+              p.text('2x', cx, cy);
+            }};
+          case 'flamethrower':
+            return { draw: (p) => {
+              p.fill(80, 80, 90, 180);
+              p.stroke(120, 120, 140, 200);
+              p.strokeWeight(2);
+              p.rect(x, y, GRID_SIZE, GRID_SIZE);
+              p.noStroke();
+              p.fill(255, 100, 60, 120);
+              p.rect(x + GRID_SIZE, y, GRID_SIZE * 3, GRID_SIZE);
+            }};
           case 'spawn':
             return { draw: (p) => {
               p.fill(100, 100, 255, 100);
@@ -378,11 +490,59 @@ export const EditorCanvas = ({
             handleEraseTool(p);
           }
         }
+        
+        if (mode === 'edit' && selectedTool === 'select') {
+          updateHoveredCell(p);
+          if (p.mouseButton === p.LEFT) {
+            if (isSelecting) {
+              selectionEnd = { x: hoveredCell.x, y: hoveredCell.y };
+            } else if (isMovingSelection && moveStartCell) {
+              const dx = hoveredCell.x - moveStartCell.x;
+              const dy = hoveredCell.y - moveStartCell.y;
+              const snappedDX = Math.round(dx / GRID_SIZE) * GRID_SIZE;
+              const snappedDY = Math.round(dy / GRID_SIZE) * GRID_SIZE;
+              selectedBlocksRef.current.forEach((obj, idx) => {
+                const base = originalPositions[idx];
+                let nx = base.x + snappedDX;
+                let ny = base.y + snappedDY;
+                nx = Math.max(0, Math.min(WIDTH - GRID_SIZE, nx));
+                ny = Math.max(0, Math.min(HEIGHT - GRID_SIZE, ny));
+                obj.x = nx;
+                obj.y = ny;
+              });
+            }
+          }
+          return false;
+        }
       };
       
       p.mousePressed = () => {
         if (mode === 'edit') {
           isDragging = true; // empezamos drag
+          
+          if (selectedTool === 'select') {
+            updateHoveredCell(p);
+            if (p.mouseButton === p.LEFT) {
+              const onSelected = selectedBlocksRef.current.some(b => b.x === hoveredCell.x && b.y === hoveredCell.y);
+              if (onSelected && selectedBlocksRef.current.length > 0) {
+                isMovingSelection = true;
+                moveStartCell = { x: hoveredCell.x, y: hoveredCell.y };
+                originalPositions = selectedBlocksRef.current.map(b => ({ x: b.x, y: b.y }));
+              } else {
+                isSelecting = true;
+                selectionStart = { x: hoveredCell.x, y: hoveredCell.y };
+                selectionEnd = { x: hoveredCell.x, y: hoveredCell.y };
+                selectedBlocksRef.current = [];
+              }
+            } else if (p.mouseButton === p.RIGHT) {
+              const onSelected = selectedBlocksRef.current.some(b => b.x === hoveredCell.x && b.y === hoveredCell.y);
+              if (onSelected && selectedBlocksRef.current.length > 0) {
+                setChangeTypeOpen(false);
+                setContextMenu({ visible: true, x: p.mouseX, y: p.mouseY });
+              }
+            }
+            return false;
+          }
           
           if (p.mouseButton === p.LEFT && selectedTool) {
             // doble click en spike = rotar
@@ -392,7 +552,7 @@ export const EditorCanvas = ({
             
             if (isDoubleClick) {
               const obj = level.getObjectAt(hoveredCell.x, hoveredCell.y);
-              if (obj && obj.type === 'spike' && obj.rotate) {
+              if (obj && (obj.type === 'spike' || obj.type === 'flamethrower') && obj.rotate) {
                 obj.rotate();
               }
               lastClickTime = 0; // corta el combo
@@ -415,7 +575,25 @@ export const EditorCanvas = ({
       };
       
       p.mouseReleased = () => {
-        isDragging = false;
+        if (selectedTool === 'select') {
+          if (isSelecting && selectionStart && selectionEnd) {
+            const left = Math.min(selectionStart.x, selectionEnd.x);
+            const top = Math.min(selectionStart.y, selectionEnd.y);
+            const right = Math.max(selectionStart.x, selectionEnd.x) + GRID_SIZE;
+            const bottom = Math.max(selectionStart.y, selectionEnd.y) + GRID_SIZE;
+            const blocks = level.getBlocks ? level.getBlocks() : level.objects.filter(obj => obj.type === 'block');
+            selectedBlocksRef.current = blocks.filter(b => b.x >= left && b.x < right && b.y >= top && b.y < bottom);
+          }
+          isSelecting = false;
+          selectionStart = null;
+          selectionEnd = null;
+          isMovingSelection = false;
+          moveStartCell = null;
+          originalPositions = [];
+          return false;
+        } else {
+          isDragging = false;
+        }
       };
       
       const updateHoveredCell = (p) => {
@@ -441,6 +619,8 @@ export const EditorCanvas = ({
               level.addObject(selectedTool, hoveredCell.x, hoveredCell.y, selectedKeyType);
             } else if (selectedTool === 'character_gate') {
               level.addObject(selectedTool, hoveredCell.x, hoveredCell.y, selectedCharacterType);
+            } else if (selectedTool === 'flamethrower') {
+              level.addObject(selectedTool, hoveredCell.x, hoveredCell.y, selectedFlameInterval);
             } else {
               level.addObject(selectedTool, hoveredCell.x, hoveredCell.y);
             }
@@ -503,7 +683,30 @@ export const EditorCanvas = ({
   }
   
   return (
-    <div ref={containerRef} className="editor-canvas-container" data-level-size={level.size}>
+    <div ref={containerRef} className={`editor-canvas-container ${selectedTool === 'select' ? 'select-mode' : ''}`} data-level-size={level.size}>
+      {contextMenu.visible && (
+        <div
+          className="editor-context-menu"
+          style={{ top: contextMenu.y, left: contextMenu.x }}
+          onMouseDown={(e) => e.stopPropagation()}
+        >
+          <button className="menu-item" onClick={handleDeleteSelected}>Eliminar</button>
+          <div className="menu-divider"></div>
+          {!changeTypeOpen ? (
+            <button className="menu-item" onClick={() => setChangeTypeOpen(true)}>Cambiar tipo</button>
+          ) : (
+            <div className="menu-types">
+              {conversionTypes.map(t => (
+                <button key={t.id} className="menu-type" onClick={() => applyChangeType(t.id)}>
+                  {t.name}
+                </button>
+              ))}
+            </div>
+          )}
+          <div className="menu-divider"></div>
+          <button className="menu-item" onClick={handleDeselect}>Deseleccionar</button>
+        </div>
+      )}
       <div ref={canvasRef} className="editor-canvas"></div>
     </div>
   );

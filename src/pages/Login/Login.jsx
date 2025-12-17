@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { FaUser, FaLock } from 'react-icons/fa';
 import { Input } from '../../components/Input/Input';
 import { Button } from '../../components/Button/Button';
@@ -8,13 +8,14 @@ import { useAuth } from '../../hooks/useAuth';
 import './Login.css';
 
 export const Login = () => {
-  const [username, setUsername] = useState('');
+  const location = useLocation();
+  const [username, setUsername] = useState(location.state?.email || '');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const { login } = useAuth();
   const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     
@@ -23,7 +24,7 @@ export const Login = () => {
       return;
     }
 
-    const result = login(username, password);
+    const result = await login(username, password);
     if (result.success) {
       navigate('/menu');
     } else {
@@ -43,7 +44,7 @@ export const Login = () => {
           <form onSubmit={handleSubmit} className="login-form">
             <Input
               type="text"
-              placeholder="Usuario"
+              placeholder="Usuario o correo"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               icon={<FaUser />}

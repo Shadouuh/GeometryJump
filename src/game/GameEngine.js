@@ -22,7 +22,7 @@ export class GameEngine {
     this.startTime = null;
     this.endTime = null;
     
-    this.availableCharacterIds = ['boxy', 'isquio', 'gordo'];
+    this.availableCharacterIds = characterService.getAllCharacters().map(c => c.id);
     const initialId = characterData?.id || 'boxy';
     const initialIndex = this.availableCharacterIds.indexOf(initialId);
     this.currentCharacterIndex = initialIndex >= 0 ? initialIndex : 0;
@@ -31,9 +31,7 @@ export class GameEngine {
     this.characterSelectOpen = false;
     this.eWasDown = false;
     this.mouseWasDown = false;
-    this.oneWasDown = false;
-    this.twoWasDown = false;
-    this.threeWasDown = false;
+    this.digitWasDown = new Array(this.availableCharacterIds.length).fill(false);
     
     this.spawnPlayer();
   }
@@ -52,6 +50,11 @@ export class GameEngine {
       // Spawn por defecto
       this.player = new Player(80, 400, activeCharacter);
     }
+    this.player.velocityX = 0;
+    this.player.velocityY = 0;
+    this.player.isInWater = false;
+    this.player.isGrounded = false;
+    this.player.facingRight = true;
   }
 
   getActiveCharacter() {
@@ -83,17 +86,15 @@ export class GameEngine {
   reset() {
     // Reset del intento
     this.spawnPlayer();
-    this.gameState = 'ready';
-    this.startTime = null;
+    this.gameState = 'playing';
+    this.startTime = Date.now();
     this.endTime = null;
     this.inputController.reset();
     this.characterSelectOpen = false;
     this.onSwitchPlatform = false;
     this.eWasDown = false;
     this.mouseWasDown = false;
-    this.oneWasDown = false;
-    this.twoWasDown = false;
-    this.threeWasDown = false;
+    this.digitWasDown = new Array(this.availableCharacterIds.length).fill(false);
     this.level.resetCoins();
     this.level.resetKeys();
     // Resetear bloques que caen
@@ -112,6 +113,22 @@ export class GameEngine {
     
     this.player.update(); // fisica del jugador
     
+    const orbs = this.level.objects.filter(obj => obj.type === 'double_jump');
+    let nearOrb = false;
+    for (const orb of orbs) {
+      const pcx = this.player.x + this.player.width / 2;
+      const pcy = this.player.y + this.player.height / 2;
+      const ocx = orb.x + orb.width / 2;
+      const ocy = orb.y + orb.height / 2;
+      const dx = pcx - ocx;
+      const dy = pcy - ocy;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      const close = dist < 60;
+      if (close) nearOrb = true;
+      orb.glow = close ? 1 : 0.5;
+    }
+    this.player.canDoubleJump = nearOrb;
+    
     // Si cae al vacio, pierde
     const { height } = this.level.getSizeDimensions();
     if (this.player.y > height) {
@@ -129,6 +146,9 @@ export class GameEngine {
     // Bloques que caen se actualizan
     this.level.objects.forEach(obj => {
       if (obj.type === 'falling_block' && obj.update) {
+        obj.update();
+      }
+      if (obj.type === 'flamethrower' && obj.update) {
         obj.update();
       }
     });
@@ -166,17 +186,30 @@ export class GameEngine {
       }
     }
     
-    // Agua: te frena
+    // Agua: flotación
     const waterBlocks = this.level.objects.filter(obj => obj.type === 'water');
     let inWater = false;
     for (const water of waterBlocks) {
       if (this.physicsEngine.checkCoinCollision(this.player, water)) {
         inWater = true;
-        this.player.velocityY *= 0.9; // Reducir velocidad vertical
-        this.player.velocityX *= 0.8; // Reducir velocidad horizontal
+        const waterTop = water.y;
+        // Amortiguar movimiento horizontal
+        this.player.velocityX *= 0.85;
+        // Limitar caída y añadir flotación suave
+        this.player.velocityY = Math.min(this.player.velocityY, 1.5);
+        this.player.velocityY -= 0.2;
+        // Si estamos cerca de la superficie, hacer "bobbing" leve
+        const feetY = this.player.y + this.player.height;
+        if (feetY < waterTop + 4) {
+          const bob = Math.sin(this.p5.frameCount * 0.08) * 0.6;
+          this.player.y = waterTop - this.player.height + bob;
+          this.player.velocityY = 0;
+        }
         break;
       }
     }
+    // Estado de agua para modificar salto
+    this.player.isInWater = inWater;
     
     // Lava: muerte instantanea
     const lavaBlocks = this.level.objects.filter(obj => obj.type === 'lava');
@@ -185,6 +218,21 @@ export class GameEngine {
         this.player.die();
         this.gameState = 'lost';
         return;
+      }
+    }
+    
+    const flamers = this.level.objects.filter(obj => obj.type === 'flamethrower');
+    for (const flam of flamers) {
+      if (!flam.on) continue;
+      const rects = flam.getFlameRects();
+      const pb = this.player.getBounds();
+      for (const r of rects) {
+        const rb = { left: r.left, right: r.right, top: r.top, bottom: r.bottom };
+        if (this.physicsEngine.checkCollision(pb, rb)) {
+          this.player.die();
+          this.gameState = 'lost';
+          return;
+        }
       }
     }
     
@@ -422,26 +470,19 @@ export class GameEngine {
   }
 
   handleCharacterSelectorInput() {
-    // Selector: se elige con 1/2/3 o con click
-    const oneDown = this.p5.keyIsDown(49);
-    const twoDown = this.p5.keyIsDown(50);
-    const threeDown = this.p5.keyIsDown(51);
-    const oneJust = oneDown && !this.oneWasDown;
-    const twoJust = twoDown && !this.twoWasDown;
-    const threeJust = threeDown && !this.threeWasDown;
-    this.oneWasDown = oneDown;
-    this.twoWasDown = twoDown;
-    this.threeWasDown = threeDown;
-
-    if (oneJust) this.setCharacterByIndex(0);
-    if (twoJust) this.setCharacterByIndex(1);
-    if (threeJust) this.setCharacterByIndex(2);
-
+    const count = this.availableCharacterIds.length;
+    for (let i = 0; i < count; i++) {
+      const code = 49 + i;
+      const down = this.p5.keyIsDown(code);
+      const just = down && !this.digitWasDown[i];
+      this.digitWasDown[i] = down;
+      if (just) this.setCharacterByIndex(i);
+    }
+    
     const mouseDown = this.p5.mouseIsPressed;
     const mouseJust = mouseDown && !this.mouseWasDown;
     this.mouseWasDown = mouseDown;
     if (mouseJust) {
-      // Click: ver si tocamos un boton del selector
       const playerX = this.player.x + this.player.width / 2;
       const playerY = this.player.y - 48;
       const hit = this.getCharacterSelectorHitIndex(playerX, playerY);
@@ -452,8 +493,8 @@ export class GameEngine {
   }
 
   drawCharacterSelector(p5, x, y) {
-    // Dibuja el cuadro con 3 opciones arriba del jugador
-    const w = 210;
+    const count = this.availableCharacterIds.length;
+    const w = count * 70 + 20;
     const h = 44;
     const x0 = x - w / 2;
     const y0 = y - h;
@@ -466,11 +507,16 @@ export class GameEngine {
     p5.noFill();
     p5.rect(x0, y0, w, h, 10);
 
-    const options = [
-      { name: 'Boxy', color: '#8b5cf6', shape: 'square', key: '1' },
-      { name: 'Isquio', color: '#a855f7', shape: 'triangle', key: '2' },
-      { name: 'Gordo', color: '#06b6d4', shape: 'circle', key: '3' }
-    ];
+    const options = this.availableCharacterIds.map((id, idx) => {
+      const ch = characterService.getCharacterById(id);
+      let shape = 'square';
+      if (ch?.type === 'triangle' || ch?.type === 'isosceles') shape = 'triangle';
+      else if (ch?.type === 'circle') shape = 'circle';
+      else if (ch?.type === 'rhombus') shape = 'rhombus';
+      else if (ch?.type === 'rectangle') shape = 'rectangle';
+      else shape = 'square';
+      return { name: ch?.name || id, color: ch?.color || '#ffffff', shape, key: String(idx + 1) };
+    });
 
     for (let i = 0; i < options.length; i++) {
       const ox = x0 + 10 + i * 70;
@@ -493,8 +539,14 @@ export class GameEngine {
         p5.rectMode(p5.CORNER);
       } else if (options[i].shape === 'triangle') {
         p5.triangle(cx, cy - 8, cx - 8, cy + 8, cx + 8, cy + 8);
-      } else {
+      } else if (options[i].shape === 'circle') {
         p5.circle(cx, cy, 14);
+      } else if (options[i].shape === 'rhombus') {
+        p5.quad(cx, cy - 8, cx + 8, cy, cx, cy + 8, cx - 8, cy);
+      } else if (options[i].shape === 'rectangle') {
+        p5.rectMode(p5.CENTER);
+        p5.rect(cx, cy, 12, 20, 3);
+        p5.rectMode(p5.CORNER);
       }
 
       p5.noStroke();
@@ -508,15 +560,15 @@ export class GameEngine {
   }
 
   getCharacterSelectorHitIndex(x, y) {
-    // Devuelve 0/1/2 si el mouse esta arriba de una opcion
-    const w = 210;
+    const count = this.availableCharacterIds.length;
+    const w = count * 70 + 20;
     const h = 44;
     const x0 = x - w / 2;
     const y0 = y - h;
     const mx = this.p5.mouseX;
     const my = this.p5.mouseY;
     if (mx < x0 || mx > x0 + w || my < y0 || my > y0 + h) return null;
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < count; i++) {
       const ox = x0 + 10 + i * 70;
       const oy = y0 + 8;
       if (mx >= ox && mx <= ox + 60 && my >= oy && my <= oy + 28) {
