@@ -2,16 +2,26 @@ import { useState, useEffect } from 'react';
 import authService from '../services/authService';
 
 export const useAuth = () => {
-  const [user, setUser] = useState(authService.getCurrentUser());
-  const [isAuthenticated, setIsAuthenticated] = useState(authService.isAuthenticated());
+  const [user, setUser] = useState(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    setUser(authService.getCurrentUser());
-    setIsAuthenticated(authService.isAuthenticated());
+    let active = true;
+    (async () => {
+      const u = await authService.fetchCurrentUser();
+      if (!active) return;
+      setUser(u);
+      setIsAuthenticated(!!u);
+      setLoading(false);
+    })();
+    return () => {
+      active = false;
+    };
   }, []);
 
-  const login = (username, password) => {
-    const result = authService.login(username, password);
+  const login = async (username, password) => {
+    const result = await authService.login(username, password);
     if (result.success) {
       setUser(result.user);
       setIsAuthenticated(true);
@@ -19,8 +29,8 @@ export const useAuth = () => {
     return result;
   };
 
-  const register = (username, email, password) => {
-    const result = authService.register(username, email, password);
+  const register = async (username, email, password) => {
+    const result = await authService.register(username, email, password);
     if (result.success) {
       setUser(result.user);
       setIsAuthenticated(true);
@@ -28,8 +38,8 @@ export const useAuth = () => {
     return result;
   };
 
-  const logout = () => {
-    authService.logout();
+  const logout = async () => {
+    await authService.logout();
     setUser(null);
     setIsAuthenticated(false);
   };
@@ -37,6 +47,7 @@ export const useAuth = () => {
   return {
     user,
     isAuthenticated,
+    loading,
     login,
     register,
     logout

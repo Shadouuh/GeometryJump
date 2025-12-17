@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { FaUser, FaLock } from 'react-icons/fa';
 import { Input } from '../../components/Input/Input';
 import { Button } from '../../components/Button/Button';
@@ -8,26 +8,33 @@ import { useAuth } from '../../hooks/useAuth';
 import './Login.css';
 
 export const Login = () => {
-  const [username, setUsername] = useState('');
+  const location = useLocation();
+  const prefillEmail = location.state?.email || '';
+  const [username, setUsername] = useState(prefillEmail);
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState(null);
   const { login } = useAuth();
   const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setFieldErrors(null);
     
     if (!username || !password) {
       setError('Por favor completa todos los campos');
       return;
     }
 
-    const result = login(username, password);
+    const result = await login(username, password);
     if (result.success) {
       navigate('/menu');
     } else {
-      setError(result.error);
+      setError(result.error || 'Error desconocido');
+      if (result.errors) {
+        setFieldErrors(result.errors);
+      }
     }
   };
 
@@ -43,7 +50,7 @@ export const Login = () => {
           <form onSubmit={handleSubmit} className="login-form">
             <Input
               type="text"
-              placeholder="Usuario"
+              placeholder="Usuario o correo"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               icon={<FaUser />}
@@ -58,6 +65,13 @@ export const Login = () => {
             />
 
             {error && <div className="error-message">{error}</div>}
+            {fieldErrors && (
+              <div className="error-message">
+                {Object.entries(fieldErrors).map(([key, arr]) => (
+                  <div key={key}>{key}: {Array.isArray(arr) ? arr[0] : String(arr)}</div>
+                ))}
+              </div>
+            )}
 
             <Button type="submit" variant="primary" fullWidth>
               Iniciar Sesión

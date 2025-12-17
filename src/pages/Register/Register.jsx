@@ -13,12 +13,15 @@ export const Register = () => {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState(null);
+  const [success, setSuccess] = useState('');
   const { register } = useAuth();
   const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setFieldErrors(null);
     
     if (!username || !email || !password || !confirmPassword) {
       setError('Por favor completa todos los campos');
@@ -35,11 +38,17 @@ export const Register = () => {
       return;
     }
 
-    const result = register(username, email, password);
+    const result = await register(username, email, password);
     if (result.success) {
-      navigate('/menu');
+      setSuccess('Cuenta creada correctamente. Redirigiendo a inicio de sesión…');
+      setTimeout(() => {
+        navigate('/login', { state: { email } });
+      }, 1500);
     } else {
-      setError(result.error);
+      setError(result.error || 'Error desconocido');
+      if (result.errors) {
+        setFieldErrors(result.errors);
+      }
     }
   };
 
@@ -86,6 +95,14 @@ export const Register = () => {
             />
 
             {error && <div className="error-message">{error}</div>}
+            {success && <div className="success-message">{success}</div>}
+            {fieldErrors && (
+              <div className="error-message">
+                {Object.entries(fieldErrors).map(([key, arr]) => (
+                  <div key={key}>{key}: {Array.isArray(arr) ? arr[0] : String(arr)}</div>
+                ))}
+              </div>
+            )}
 
             <Button type="submit" variant="primary" fullWidth>
               Crear Cuenta
