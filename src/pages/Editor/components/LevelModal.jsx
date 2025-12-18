@@ -151,7 +151,7 @@ export const LevelModal = ({ isOpen, mode, level, onClose, onSave, onLoad }) => 
                 label="Nombre del Nivel"
                 value={levelName}
                 onChange={(e) => {
-                  const val = e.target.value;
+                  let val = e.target.value;
                   setLevelName(val);
                   level.name = val;
                 }}

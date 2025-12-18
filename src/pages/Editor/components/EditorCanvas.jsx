@@ -99,7 +99,7 @@ export const EditorCanvas = ({
     
     const sketch = (p) => {
       const GRID_SIZE = 40; // tamano de celda
-      const levelDims = level.getSizeDimensions ? level.getSizeDimensions() : { width: 800, height: 600 }; // tamano del mundo
+      const levelDims = level.getSizeDimensions ? level.getSizeDimensions() : { width: 800, height: 600 }; // tamaño del mundo
       const WIDTH = levelDims.width; // ancho del canvas
       const HEIGHT = levelDims.height; // alto del canvas
       
